@@ -15,6 +15,95 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/pdf/compress/{file_name}": {
+            "post": {
+                "description": "Compresses the PDF file specified by the file name parameter.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PDFs"
+                ],
+                "summary": "Compress a PDF file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "The name of the PDF file to compress",
+                        "name": "file_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Compressed PDF file details",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Pdf"
+                        }
+                    },
+                    "404": {
+                        "description": "File not found",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/pdf/edit": {
+            "put": {
+                "description": "Request body for editing a PDF file (rotate, add image, add SVG, etc.)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PDFs"
+                ],
+                "parameters": [
+                    {
+                        "description": "PDF Edit Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.PdfEditRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Edited PDF",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Pdf"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or missing parameters",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/pdf/fetch": {
             "get": {
                 "description": "Fetches a list of PDFs based on the provided query parameter ` + "`" + `num` + "`" + `",
@@ -72,7 +161,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "pdfs"
+                    "PDFs"
                 ],
                 "summary": "Merge PDF files",
                 "parameters": [
@@ -121,7 +210,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "pdfs"
+                    "PDFs"
                 ],
                 "summary": "Upload PDF files",
                 "parameters": [
@@ -202,6 +291,21 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "rest.PdfEditRequest": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },

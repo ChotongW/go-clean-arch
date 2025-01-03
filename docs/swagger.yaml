@@ -26,6 +26,16 @@ definitions:
           type: string
         type: array
     type: object
+  rest.PdfEditRequest:
+    properties:
+      file_name:
+        type: string
+      operation:
+        type: string
+      params:
+        additionalProperties: true
+        type: object
+    type: object
   rest.ResponseError:
     properties:
       message:
@@ -38,6 +48,65 @@ info:
   title: Go Clean Arch API
   version: "1.0"
 paths:
+  /pdf/compress/{file_name}:
+    post:
+      consumes:
+      - application/json
+      description: Compresses the PDF file specified by the file name parameter.
+      parameters:
+      - description: The name of the PDF file to compress
+        in: path
+        name: file_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Compressed PDF file details
+          schema:
+            $ref: '#/definitions/domain.Pdf'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+      summary: Compress a PDF file
+      tags:
+      - PDFs
+  /pdf/edit:
+    put:
+      consumes:
+      - application/json
+      description: Request body for editing a PDF file (rotate, add image, add SVG,
+        etc.)
+      parameters:
+      - description: PDF Edit Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/rest.PdfEditRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Edited PDF
+          schema:
+            $ref: '#/definitions/domain.Pdf'
+        "400":
+          description: Invalid request body or missing parameters
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+      tags:
+      - PDFs
   /pdf/fetch:
     get:
       consumes:
@@ -100,7 +169,7 @@ paths:
             type: object
       summary: Merge PDF files
       tags:
-      - pdfs
+      - PDFs
   /pdf/upload:
     post:
       consumes:
@@ -135,5 +204,5 @@ paths:
             type: object
       summary: Upload PDF files
       tags:
-      - pdfs
+      - PDFs
 swagger: "2.0"
