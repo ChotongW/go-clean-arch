@@ -9,6 +9,53 @@
     "host": "localhost:9090",
     "basePath": "/",
     "paths": {
+        "/pdf/fetch": {
+            "get": {
+                "description": "Fetches a list of PDFs based on the provided query parameter `num`",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PDFs"
+                ],
+                "summary": "Fetch a list of PDFs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of PDFs to fetch",
+                        "name": "num",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of PDFs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Pdf"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/pdf/merge": {
             "post": {
                 "description": "Merge the provided list of PDF files into a single file",
@@ -149,6 +196,14 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "rest.ResponseError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
                 }
             }
         }
