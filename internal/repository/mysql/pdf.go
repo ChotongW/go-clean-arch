@@ -89,3 +89,23 @@ func (m *PdfRepository) StoreAll(ctx context.Context, a []*domain.Pdf) (err erro
 	tx.Commit()
 	return
 }
+
+func (m *PdfRepository) Store(ctx context.Context, p *domain.Pdf) (err error) {
+	query := `INSERT INTO pdf (file_name, file_path, created_at, updated_at, file_size) 
+	VALUES (?,?,?,?,?)`
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+	if err != nil {
+		return
+	}
+
+	res, err := stmt.ExecContext(ctx, p.FileName, p.FilePath, p.CreatedAt, p.UpdatedAt, p.FileSize)
+	if err != nil {
+		return
+	}
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return
+	}
+	p.ID = lastID
+	return
+}
