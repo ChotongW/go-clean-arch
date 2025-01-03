@@ -170,6 +170,46 @@ paths:
       summary: Merge PDF files
       tags:
       - PDFs
+  /pdf/split/{file_name}:
+    post:
+      consumes:
+      - application/json
+      description: Splits the given PDF file into multiple files based on its content
+      parameters:
+      - description: Name of the PDF file to split
+        in: path
+        name: file_name
+        required: true
+        type: string
+      - default: 1
+        description: Number of pages per split
+        in: query
+        name: pages_per_split
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Array of split PDF files
+          schema:
+            items:
+              $ref: '#/definitions/domain.Pdf'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ResponseError'
+      summary: Split a PDF file
+      tags:
+      - PDFs
   /pdf/upload:
     post:
       consumes:

@@ -194,6 +194,66 @@
                 }
             }
         },
+        "/pdf/split/{file_name}": {
+            "post": {
+                "description": "Splits the given PDF file into multiple files based on its content",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PDFs"
+                ],
+                "summary": "Split a PDF file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the PDF file to split",
+                        "name": "file_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Number of pages per split",
+                        "name": "pages_per_split",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Array of split PDF files",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Pdf"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "File not found",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/pdf/upload": {
             "post": {
                 "description": "Upload one or more PDF files and save them to the server",
