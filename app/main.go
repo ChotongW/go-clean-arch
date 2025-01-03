@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	mysqlRepo "github.com/bxcodec/go-clean-arch/internal/repository/mysql"
+	"github.com/bxcodec/go-clean-arch/pdf"
 
 	"github.com/bxcodec/go-clean-arch/article"
 	"github.com/bxcodec/go-clean-arch/internal/rest"
@@ -76,9 +77,14 @@ func main() {
 	authorRepo := mysqlRepo.NewAuthorRepository(dbConn)
 	articleRepo := mysqlRepo.NewArticleRepository(dbConn)
 
+	pdfRepo := mysqlRepo.NewPdfRepository(dbConn)
+
 	// Build service Layer
 	svc := article.NewService(articleRepo, authorRepo)
+	pdfSvc := pdf.NewService(pdfRepo)
+
 	rest.NewArticleHandler(e, svc)
+	rest.NewPdfHandler(e, pdfSvc)
 
 	// Start Server
 	address := os.Getenv("SERVER_ADDRESS")
