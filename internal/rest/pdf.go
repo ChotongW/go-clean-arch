@@ -21,6 +21,8 @@ type PdfService interface {
 	Upload(ctx context.Context, p []*domain.Pdf) (string, error)
 	Merge(ctx context.Context, p []string) (domain.Pdf, error)
 	Fetch(ctx context.Context, n int64) ([]domain.Pdf, error)
+	Compress(ctx context.Context, filename string) (domain.Pdf, error)
+	RotatePdfPage(ctx context.Context, filename string, rotationAngle int) (domain.Pdf, error)
 }
 
 type PdfHandler struct {
@@ -34,6 +36,8 @@ func NewPdfHandler(e *echo.Echo, svc PdfService) {
 	e.POST("/pdf/upload", handler.Upload)
 	e.POST("/pdf/merge", handler.Merge)
 	e.GET("/pdf/fetch", handler.Fetch)
+	e.POST("/pdf/compress/:file_name", handler.Compress)
+	e.PUT("/pdf/edit", handler.EditPdf)
 	// e.DELETE("/articles/:id", handler.)
 }
 
@@ -65,7 +69,7 @@ func (p *PdfHandler) Fetch(c echo.Context) (err error) {
 
 // @Summary Upload PDF files
 // @Description Upload one or more PDF files and save them to the server
-// @Tags pdfs
+// @Tags PDFs
 // @Accept multipart/form-data
 // @Produce json
 // @Param pdfs formData file true "PDF files to be uploaded"
@@ -137,7 +141,7 @@ type MergeRequest struct {
 
 // @Summary Merge PDF files
 // @Description Merge the provided list of PDF files into a single file
-// @Tags pdfs
+// @Tags PDFs
 // @Accept json
 // @Produce json
 // @Param request body MergeRequest true "List of file names to be merged"
@@ -159,4 +163,76 @@ func (p *PdfHandler) Merge(c echo.Context) (err error) {
 	}
 
 	return c.JSON(http.StatusCreated, mergedFile)
+}
+
+// Compress compresses a specified PDF file.
+// @Summary Compress a PDF file
+// @Description Compresses the PDF file specified by the file name parameter.
+// @Tags PDFs
+// @Accept json
+// @Produce json
+// @Param file_name path string true "The name of the PDF file to compress"
+// @Success 201 {object} domain.Pdf "Compressed PDF file details"
+// @Failure 404 {object} ResponseError "File not found"
+// @Failure 500 {object} ResponseError "Internal server error"
+// @Router /pdf/compress/{file_name} [post]
+func (p *PdfHandler) Compress(c echo.Context) (err error) {
+	filename := c.Param("file_name")
+	if filename == "" {
+		return c.JSON(http.StatusNotFound, domain.ErrNotFound.Error())
+	}
+
+	ctx := c.Request().Context()
+	mergedFile, err := p.Service.Compress(ctx, filename)
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+
+	return c.JSON(http.StatusCreated, mergedFile)
+}
+
+type PdfEditRequest struct {
+	Operation string                 `json:"operation"`
+	FileName  string                 `json:"file_name"`
+	Params    map[string]interface{} `json:"params"`
+}
+
+// PdfEditRequest defines the input structure for editing PDFs
+// @Tags PDFs
+// @Description Request body for editing a PDF file (rotate, add image, add SVG, etc.)
+// @Accept json
+// @Produce json
+// @Param body body PdfEditRequest true "PDF Edit Request"
+// @Success 200 {object} domain.Pdf "Edited PDF"
+// @Failure 400 {object} ResponseError "Invalid request body or missing parameters"
+// @Failure 500 {object} ResponseError "Internal server error"
+// @Router /pdf/edit [put]
+func (p *PdfHandler) EditPdf(c echo.Context) (err error) {
+	var req PdfEditRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, ResponseError{Message: "Invalid request body"})
+	}
+	ctx := c.Request().Context()
+	var resultPdf domain.Pdf
+	// Determine the operation based on the request
+	switch req.Operation {
+	case "rotate":
+		angle, ok := req.Params["angle"].(float64)
+		if !ok {
+			return c.JSON(http.StatusBadRequest, ResponseError{Message: "angle is required"})
+		}
+		resultPdf, err = p.Service.RotatePdfPage(ctx, req.FileName, int(angle))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, ResponseError{Message: err.Error()})
+		}
+
+	case "addImage":
+		// implement other operation
+	case "addSvg":
+		// implement other operation
+	default:
+		return c.JSON(http.StatusBadRequest, ResponseError{Message: "Unknown operation"})
+	}
+
+	return c.JSON(http.StatusOK, resultPdf)
 }
