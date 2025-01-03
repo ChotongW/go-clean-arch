@@ -81,7 +81,14 @@ func main() {
 	timeoutContext := time.Duration(timeout) * time.Second
 	e.Use(middleware.SetRequestContextWithTimeout(timeoutContext))
 
+	e.Static("/docs", "docs")
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET("/swagger/doc.json", func(c echo.Context) error {
+		return c.File("docs/swagger.json") // Serve the swagger.json file
+	})
+	e.GET("/swagger/doc.yaml", func(c echo.Context) error {
+		return c.File("docs/swagger.yaml") // Serve the swagger.json file
+	})
 
 	// Prepare Repository
 	authorRepo := mysqlRepo.NewAuthorRepository(dbConn)
