@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/bxcodec/go-clean-arch/domain"
@@ -154,4 +155,57 @@ func (p *Service) RotatePdfPage(ctx context.Context, filename string, rotationAn
 	}
 
 	return pdf, nil
+}
+
+func (p *Service) SplitPdf(ctx context.Context, filename string, pagesPerSplit int) ([]domain.Pdf, error) {
+	srcDir, _ := filepath.Abs(filepath.Join("tmp", filename))
+	if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+		return []domain.Pdf{}, fmt.Errorf("input file does not exist: %v", err)
+	}
+
+	desPath, _ := filepath.Abs(filepath.Join("tmp", ""))
+
+	var outputPdfs []domain.Pdf
+
+	err := api.SplitFile(srcDir, desPath, pagesPerSplit, nil)
+	if err != nil {
+		return []domain.Pdf{}, fmt.Errorf("failed to split PDF: %w", err)
+	}
+
+	baseName := filepath.Base(filename)
+	ext := filepath.Ext(baseName)
+	baseName = baseName[:len(baseName)-len(ext)]
+
+	// regex will match any files that start with the base name and may end with "_n" or "_n-m"
+	pattern := fmt.Sprintf(`^%s(_\d+(-\d+)?)?%s$`, regexp.QuoteMeta(baseName), regexp.QuoteMeta(ext))
+	re := regexp.MustCompile(pattern)
+
+	files, err := os.ReadDir(desPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read output directory: %w", err)
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			fileInfo, err := file.Info()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get file info: %w", err)
+			}
+			if re.MatchString(fileInfo.Name()) && fileInfo.Name() != filename {
+				var pdf domain.Pdf
+				pdf.FilePath = filepath.Join(desPath, fileInfo.Name())
+				pdf.FileName = fileInfo.Name()
+				pdf.FileSize = fileInfo.Size()
+				pdf.CreatedAt = time.Now()
+				pdf.UpdatedAt = time.Now()
+				outputPdfs = append(outputPdfs, pdf)
+				err = p.pdfRepo.Store(ctx, &pdf)
+				if err != nil {
+					return []domain.Pdf{}, fmt.Errorf("failed to split PDF: %w", err)
+				}
+			}
+		}
+	}
+
+	return outputPdfs, nil
 }

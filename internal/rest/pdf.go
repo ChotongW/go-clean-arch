@@ -23,6 +23,7 @@ type PdfService interface {
 	Fetch(ctx context.Context, n int64) ([]domain.Pdf, error)
 	Compress(ctx context.Context, filename string) (domain.Pdf, error)
 	RotatePdfPage(ctx context.Context, filename string, rotationAngle int) (domain.Pdf, error)
+	SplitPdf(ctx context.Context, filename string, pagesPerSplit int) ([]domain.Pdf, error)
 }
 
 type PdfHandler struct {
@@ -38,6 +39,7 @@ func NewPdfHandler(e *echo.Echo, svc PdfService) {
 	e.GET("/pdf/fetch", handler.Fetch)
 	e.POST("/pdf/compress/:file_name", handler.Compress)
 	e.PUT("/pdf/edit", handler.EditPdf)
+	e.POST("/pdf/split/:file_name", handler.SplitPdf)
 	// e.DELETE("/articles/:id", handler.)
 }
 
@@ -235,4 +237,42 @@ func (p *PdfHandler) EditPdf(c echo.Context) (err error) {
 	}
 
 	return c.JSON(http.StatusOK, resultPdf)
+}
+
+// @Summary Split a PDF file
+// @Tags PDFs
+// @Description Splits the given PDF file into multiple files based on its content
+// @Accept  json
+// @Produce  json
+// @Param file_name path string true "Name of the PDF file to split"
+// @Param pages_per_split query int false "Number of pages per split" default(1)
+// @Success 201 {array} domain.Pdf "Array of split PDF files"
+// @Failure 400 {object} ResponseError "Bad request"
+// @Failure 404 {object} ResponseError "File not found"
+// @Failure 500 {object} ResponseError "Internal server error"
+// @Router /pdf/split/{file_name} [post]
+func (p *PdfHandler) SplitPdf(c echo.Context) (err error) {
+	filename := c.Param("file_name")
+	if filename == "" {
+		return c.JSON(http.StatusNotFound, domain.ErrNotFound.Error())
+	}
+
+	pagesPerSplit := 1
+	pagesParam := c.QueryParam("pages_per_split")
+	if pagesParam != "" {
+		parsedPages, err := strconv.Atoi(pagesParam)
+		if err == nil {
+			pagesPerSplit = parsedPages
+		}
+	} else {
+		return c.JSON(http.StatusBadRequest, ResponseError{Message: "pages_per_split is required"})
+	}
+
+	ctx := c.Request().Context()
+	splitFiles, err := p.Service.SplitPdf(ctx, filename, pagesPerSplit)
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+
+	return c.JSON(http.StatusCreated, splitFiles)
 }
