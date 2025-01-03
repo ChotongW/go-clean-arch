@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ import (
 type PdfService interface {
 	Upload(ctx context.Context, p []*domain.Pdf) (string, error)
 	Merge(ctx context.Context, p []string) (domain.Pdf, error)
+	Fetch(ctx context.Context, n int64) ([]domain.Pdf, error)
 }
 
 type PdfHandler struct {
@@ -31,8 +33,34 @@ func NewPdfHandler(e *echo.Echo, svc PdfService) {
 	}
 	e.POST("/pdf/upload", handler.Upload)
 	e.POST("/pdf/merge", handler.Merge)
-	// e.GET("/articles/:id", handler.GetByID)
+	e.GET("/pdf/fetch", handler.Fetch)
 	// e.DELETE("/articles/:id", handler.)
+}
+
+// Fetch godoc
+// @Summary Fetch a list of PDFs
+// @Description Fetches a list of PDFs based on the provided query parameter `num`
+// @Tags PDFs
+// @Accept json
+// @Produce json
+// @Param num query int false "Number of PDFs to fetch" default(10)
+// @Success 200 {array} domain.Pdf "List of PDFs"
+// @Failure 400 {object} ResponseError "Bad request"
+// @Failure 500 {object} ResponseError "Internal server error"
+// @Router /pdf/fetch [get]
+func (p *PdfHandler) Fetch(c echo.Context) (err error) {
+	numS := c.QueryParam("num")
+	num, err := strconv.Atoi(numS)
+	if err != nil || num == 0 {
+		num = defaultNum
+	}
+	ctx := c.Request().Context()
+
+	listAr, err := p.Service.Fetch(ctx, int64(num))
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+	return c.JSON(http.StatusOK, listAr)
 }
 
 // @Summary Upload PDF files

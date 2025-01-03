@@ -11,6 +11,7 @@ import (
 
 type PdfRepository interface {
 	StoreAll(ctx context.Context, p []*domain.Pdf) error
+	Fetch(ctx context.Context, num int64) ([]domain.Pdf, error)
 }
 
 type Service struct {
@@ -24,6 +25,15 @@ func NewService(p PdfRepository) *Service {
 	}
 }
 
+func (p *Service) Fetch(ctx context.Context, num int64) ([]domain.Pdf, error) {
+
+	res, err := p.pdfRepo.Fetch(ctx, num)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+
+}
 func (p *Service) Upload(ctx context.Context, pdfs []*domain.Pdf) (string, error) {
 	// fmt.Println("call service")
 	err := p.pdfRepo.StoreAll(ctx, pdfs)
