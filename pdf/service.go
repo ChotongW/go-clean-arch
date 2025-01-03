@@ -3,13 +3,17 @@ package pdf
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/bxcodec/go-clean-arch/domain"
+	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
 type PdfRepository interface {
+	Store(ctx context.Context, p *domain.Pdf) error
 	StoreAll(ctx context.Context, p []*domain.Pdf) error
 	Fetch(ctx context.Context, num int64) ([]domain.Pdf, error)
 }
@@ -46,12 +50,30 @@ func (p *Service) Merge(ctx context.Context, inputFiles []string) (domain.Pdf, e
 	var fullPaths []string
 	for _, file := range inputFiles {
 		srcDir, _ := filepath.Abs(filepath.Join("tmp", file))
+		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+			return domain.Pdf{}, fmt.Errorf("file does not exist: %s", srcDir)
+		}
 		fullPaths = append(fullPaths, srcDir)
 	}
+	now := time.Now()
 	var pdf domain.Pdf
+	pdf.CreatedAt = now
+	pdf.UpdatedAt = now
+
+	filename := fmt.Sprintf("%s%s%s", "output_", uuid.New().String(), ".pdf")
+	desPath, _ := filepath.Abs(filepath.Join("tmp", filename))
+
+	pdf.FilePath = desPath
+	pdf.FileName = filename
 	err := api.MergeCreateFile(fullPaths, pdf.FilePath, false, nil)
 	if err != nil {
 		return domain.Pdf{}, fmt.Errorf("failed to merge PDFs: %w", err)
 	}
+
+	err = p.pdfRepo.Store(ctx, &pdf)
+	if err != nil {
+		return domain.Pdf{}, fmt.Errorf("failed to upload PDFs: %w", err)
+	}
+
 	return pdf, nil
 }
