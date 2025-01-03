@@ -1,0 +1,103 @@
+basePath: /
+definitions:
+  domain.Pdf:
+    properties:
+      created_at:
+        type: string
+      file_name:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      updated_at:
+        type: string
+    required:
+    - file_name
+    - file_path
+    - file_size
+    type: object
+  rest.MergeRequest:
+    properties:
+      fileNames:
+        items:
+          type: string
+        type: array
+    type: object
+host: localhost:9090
+info:
+  contact: {}
+  description: This is a sample server for Go Clean Architecture.
+  title: Go Clean Arch API
+  version: "1.0"
+paths:
+  /pdf/merge:
+    post:
+      consumes:
+      - application/json
+      description: Merge the provided list of PDF files into a single file
+      parameters:
+      - description: List of file names to be merged
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.MergeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: The merged PDF file
+          schema:
+            $ref: '#/definitions/domain.Pdf'
+        "422":
+          description: Unprocessable entity error details
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Merge PDF files
+      tags:
+      - pdfs
+  /pdf/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload one or more PDF files and save them to the server
+      parameters:
+      - description: PDF files to be uploaded
+        in: formData
+        name: pdfs
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: List of uploaded PDFs
+          schema:
+            items:
+              $ref: '#/definitions/domain.Pdf'
+            type: array
+        "400":
+          description: Invalid request, error details
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload PDF files
+      tags:
+      - pdfs
+swagger: "2.0"

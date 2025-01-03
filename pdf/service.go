@@ -3,6 +3,7 @@ package pdf
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/bxcodec/go-clean-arch/domain"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
@@ -32,8 +33,13 @@ func (p *Service) Upload(ctx context.Context, pdfs []*domain.Pdf) (string, error
 	return "", nil
 }
 func (p *Service) Merge(ctx context.Context, inputFiles []string) (domain.Pdf, error) {
+	var fullPaths []string
+	for _, file := range inputFiles {
+		srcDir, _ := filepath.Abs(filepath.Join("tmp", file))
+		fullPaths = append(fullPaths, srcDir)
+	}
 	var pdf domain.Pdf
-	err := api.MergeCreateFile(inputFiles, pdf.FilePath, false, nil)
+	err := api.MergeCreateFile(fullPaths, pdf.FilePath, false, nil)
 	if err != nil {
 		return domain.Pdf{}, fmt.Errorf("failed to merge PDFs: %w", err)
 	}

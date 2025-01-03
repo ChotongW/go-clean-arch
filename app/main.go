@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	mysqlRepo "github.com/bxcodec/go-clean-arch/internal/repository/mysql"
 	"github.com/bxcodec/go-clean-arch/pdf"
@@ -32,6 +33,13 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 }
+
+// @title Go Clean Arch API
+// @version 1.0
+// @description This is a sample server for Go Clean Architecture.
+
+// @host localhost:9090
+// @BasePath /
 
 func main() {
 	//prepare database
@@ -72,6 +80,8 @@ func main() {
 	}
 	timeoutContext := time.Duration(timeout) * time.Second
 	e.Use(middleware.SetRequestContextWithTimeout(timeoutContext))
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Prepare Repository
 	authorRepo := mysqlRepo.NewAuthorRepository(dbConn)

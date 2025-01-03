@@ -35,6 +35,16 @@ func NewPdfHandler(e *echo.Echo, svc PdfService) {
 	// e.DELETE("/articles/:id", handler.)
 }
 
+// @Summary Upload PDF files
+// @Description Upload one or more PDF files and save them to the server
+// @Tags pdfs
+// @Accept multipart/form-data
+// @Produce json
+// @Param pdfs formData file true "PDF files to be uploaded"
+// @Success 201 {array} domain.Pdf "List of uploaded PDFs"
+// @Failure 400 {object} map[string]string "Invalid request, error details"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /pdf/upload [post]
 func (p *PdfHandler) Upload(c echo.Context) (err error) {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -97,6 +107,16 @@ type MergeRequest struct {
 	FileNames []string `json:"fileNames"`
 }
 
+// @Summary Merge PDF files
+// @Description Merge the provided list of PDF files into a single file
+// @Tags pdfs
+// @Accept json
+// @Produce json
+// @Param request body MergeRequest true "List of file names to be merged"
+// @Success 201 {object} domain.Pdf "The merged PDF file"
+// @Failure 422 {object} string "Unprocessable entity error details"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /pdf/merge [post]
 func (p *PdfHandler) Merge(c echo.Context) (err error) {
 	req := new(MergeRequest)
 	err = c.Bind(&req)
