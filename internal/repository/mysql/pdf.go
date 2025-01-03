@@ -109,3 +109,43 @@ func (m *PdfRepository) Store(ctx context.Context, p *domain.Pdf) (err error) {
 	p.ID = lastID
 	return
 }
+
+func (m *PdfRepository) Update(ctx context.Context, p *domain.Pdf) (err error) {
+	query := `UPDATE pdf set file_path=?, file_name=?, file_size=?, updated_at=? WHERE id = ?`
+
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+	if err != nil {
+		return
+	}
+
+	res, err := stmt.ExecContext(ctx, p.FilePath, p.FileName, p.FileSize, p.UpdatedAt, p.ID)
+	if err != nil {
+		return
+	}
+	affect, err := res.RowsAffected()
+	if err != nil {
+		return
+	}
+	if affect != 1 {
+		err = fmt.Errorf("weird  Behavior. Total Affected: %d", affect)
+		return
+	}
+
+	return
+}
+
+func (m *PdfRepository) GetByFileName(ctx context.Context, fileName string) (res domain.Pdf, err error) {
+	query := `SELECT id,file_path,file_name, file_size, updated_at, created_at FROM pdf WHERE file_name = ?`
+
+	list, err := m.fetch(ctx, query, fileName)
+	if err != nil {
+		return
+	}
+
+	if len(list) > 0 {
+		res = list[0]
+	} else {
+		return res, domain.ErrNotFound
+	}
+	return
+}
